@@ -1,0 +1,351 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global hardened primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list
+        && arr.size() <= maxLen
+        && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 128));
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isValidStudyProgress(data, userId) {
+      return data.keys().hasAll([
+          'userId',
+          'completedModuleIds',
+          'solvedProblemIds',
+          'masteredInterviewIds',
+          'completedRoadmapDayIds',
+          'lastModuleId',
+          'theme',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'completedModuleIds',
+          'solvedProblemIds',
+          'masteredInterviewIds',
+          'completedRoadmapDayIds',
+          'lastModuleId',
+          'theme',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.userId == userId
+        && isValidId(data.userId)
+        && isBoundedStringList(data.completedModuleIds, 30)
+        && isBoundedStringList(data.solvedProblemIds, 50)
+        && isBoundedStringList(data.masteredInterviewIds, 100)
+        && isBoundedStringList(data.completedRoadmapDayIds, 60)
+        && data.lastModuleId is string
+        && data.lastModuleId.size() >= 1
+        && data.lastModuleId.size() <= 64
+        && data.lastModuleId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.theme is string
+        && data.theme in ['dark', 'light']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudyNote(data, userId) {
+      return data.keys().hasAll([
+          'userId',
+          'moduleId',
+          'timestampSeconds',
+          'timestampLabel',
+          'content',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'moduleId',
+          'timestampSeconds',
+          'timestampLabel',
+          'content',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.userId == userId
+        && isValidId(data.userId)
+        && data.moduleId is string
+        && data.moduleId.size() >= 1
+        && data.moduleId.size() <= 64
+        && data.moduleId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.timestampSeconds is number
+        && data.timestampSeconds >= 0
+        && data.timestampSeconds <= 20000
+        && data.timestampLabel is string
+        && data.timestampLabel.size() >= 1
+        && data.timestampLabel.size() <= 16
+        && data.content is string
+        && data.content.size() >= 1
+        && data.content.size() <= 4000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCodeSubmission(data, userId, problemId) {
+      return data.keys().hasAll([
+          'userId',
+          'problemId',
+          'code',
+          'passed',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'problemId',
+          'code',
+          'passed',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.userId == userId
+        && isValidId(data.userId)
+        && data.problemId is string
+        && data.problemId == problemId
+        && data.problemId.size() >= 1
+        && data.problemId.size() <= 64
+        && data.problemId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.code is string
+        && data.code.size() <= 15000
+        && data.passed is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRoadmap(data, userId) {
+      return data.keys().hasAll([
+          'userId',
+          'title',
+          'goal',
+          'experienceLevel',
+          'dailyMinutes',
+          'totalDays',
+          'summary',
+          'days',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'title',
+          'goal',
+          'experienceLevel',
+          'dailyMinutes',
+          'totalDays',
+          'summary',
+          'days',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.userId == userId
+        && isValidId(data.userId)
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 160
+        && data.goal is string
+        && data.goal.size() >= 1
+        && data.goal.size() <= 80
+        && data.experienceLevel is string
+        && data.experienceLevel.size() >= 1
+        && data.experienceLevel.size() <= 64
+        && data.dailyMinutes is number
+        && data.dailyMinutes >= 15
+        && data.dailyMinutes <= 360
+        && data.totalDays is number
+        && data.totalDays >= 1
+        && data.totalDays <= 90
+        && data.summary is string
+        && data.summary.size() <= 1000
+        && data.days is list
+        && data.days.size() <= 45
+        && (data.days.size() == 0 || data.days[0] is map)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Root user study progress document
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidStudyProgress(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidStudyProgress(incoming(), userId)
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'completedModuleIds',
+            'solvedProblemIds',
+            'masteredInterviewIds',
+            'completedRoadmapDayIds',
+            'lastModuleId',
+            'theme',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Timestamped Study Notes
+      match /notes/{noteId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(noteId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && isValidStudyNote(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && isValidStudyNote(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().moduleId == existing().moduleId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'content',
+            'timestampSeconds',
+            'timestampLabel',
+            'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(noteId)
+          && parentUserExists(userId);
+      }
+
+      // Subcollection: Interactive Code & DSA Submissions
+      match /submissions/{problemId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(problemId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(problemId)
+          && isValidCodeSubmission(incoming(), userId, problemId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(problemId)
+          && isValidCodeSubmission(incoming(), userId, problemId)
+          && incoming().userId == existing().userId
+          && incoming().problemId == existing().problemId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'code',
+            'passed',
+            'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(problemId)
+          && parentUserExists(userId);
+      }
+
+      // Subcollection: Personalized Study Roadmaps
+      match /roadmaps/{roadmapId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(roadmapId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(roadmapId)
+          && isValidRoadmap(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+
+        allow update: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(roadmapId)
+          && isValidRoadmap(incoming(), userId)
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'title',
+            'goal',
+            'experienceLevel',
+            'dailyMinutes',
+            'totalDays',
+            'summary',
+            'days',
+            'updatedAt'
+          ])
+          && parentUserExists(userId);
+
+        allow delete: if isOwner(userId)
+          && isValidId(userId)
+          && isValidId(roadmapId)
+          && parentUserExists(userId);
+      }
+    }
+  }
+}

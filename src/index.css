@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Fraunces", Georgia, Cambria, serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-hand: "Caveat", cursive;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  code, pre, textarea.code-editor, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .font-hand {
+    font-family: var(--font-hand);
+  }
+
+  .dark body,
+  html.dark {
+    color-scheme: dark;
+    letter-spacing: 0.005em;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+}
+
+/* Tactile Ruled Archival Notebook Sheet */
+.ruled-paper-light {
+  background-color: #faf6ec;
+  background-image:
+    linear-gradient(90deg, transparent 48px, rgba(186, 82, 68, 0.34) 48px, rgba(186, 82, 68, 0.34) 49.5px, transparent 49.5px),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 31px,
+      rgba(120, 113, 98, 0.17) 31px,
+      rgba(120, 113, 98, 0.17) 32px
+    );
+  background-position: 0 0, 0 26px;
+}
+
+.ruled-paper-dark {
+  background-color: #1b1815;
+  background-image:
+    linear-gradient(90deg, transparent 48px, rgba(214, 112, 92, 0.24) 48px, rgba(214, 112, 92, 0.24) 49.5px, transparent 49.5px),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 31px,
+      rgba(229, 169, 60, 0.1) 31px,
+      rgba(229, 169, 60, 0.1) 32px
+    );
+  background-position: 0 0, 0 26px;
+}
+
+/* Quiet custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(163, 154, 142, 0.28);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 154, 142, 0.48);
+}
+
+@media print {
+  header,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #1b1815 !important;
+  }
+  .print-sheet {
+    break-after: page;
+    page-break-after: always;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,230 @@
+{
+  "entities": {
+    "StudyProgress": {
+      "title": "Study Progress",
+      "description": "Per-user course completion, solved DSA drills, mastered interview questions, and UI preferences.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Authenticated user UID."
+        },
+        "completedModuleIds": {
+          "type": "array",
+          "description": "Completed course module identifiers (max 30)."
+        },
+        "solvedProblemIds": {
+          "type": "array",
+          "description": "Solved DSA challenge identifiers (max 50)."
+        },
+        "masteredInterviewIds": {
+          "type": "array",
+          "description": "Mastered end-of-topic interview question identifiers (max 100)."
+        },
+        "completedRoadmapDayIds": {
+          "type": "array",
+          "description": "Completed personalized roadmap day identifiers (max 60)."
+        },
+        "lastModuleId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Most recently viewed module ID."
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light"],
+          "description": "Selected visual theme."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "completedModuleIds",
+        "solvedProblemIds",
+        "masteredInterviewIds",
+        "completedRoadmapDayIds",
+        "lastModuleId",
+        "theme",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudyNote": {
+      "title": "Study Note",
+      "description": "Timestamped study note linked to a course video module.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "moduleId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "timestampSeconds": {
+          "type": "number"
+        },
+        "timestampLabel": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "moduleId",
+        "timestampSeconds",
+        "timestampLabel",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CodeSubmission": {
+      "title": "Code Submission",
+      "description": "Saved Python solution code and pass state for a DSA or module exercise.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "problemId": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 15000
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "problemId",
+        "code",
+        "passed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PersonalizedRoadmap": {
+      "title": "Personalized Roadmap",
+      "description": "Generated spaced-repetition study plan tailored to learner schedule and goals.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "experienceLevel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "dailyMinutes": {
+          "type": "number"
+        },
+        "totalDays": {
+          "type": "number"
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "days": {
+          "type": "array",
+          "description": "Ordered list of daily study milestone objects (max 45)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "goal",
+        "experienceLevel",
+        "dailyMinutes",
+        "totalDays",
+        "summary",
+        "days",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/StudyProgress" },
+      "description": "Root progress document owned by a single authenticated learner."
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/StudyNote" },
+      "description": "Learner timestamped study notes tied to video chapters."
+    },
+    "/users/{userId}/submissions/{problemId}": {
+      "schema": { "$ref": "#/entities/CodeSubmission" },
+      "description": "Saved Python code submissions for interactive DSA and practice problems."
+    },
+    "/users/{userId}/roadmaps/{roadmapId}": {
+      "schema": { "$ref": "#/entities/PersonalizedRoadmap" },
+      "description": "Personalized spaced-repetition study plans."
+    }
+  }
+}

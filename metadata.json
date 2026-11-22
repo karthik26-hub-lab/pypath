@@ -1,0 +1,6 @@
+{
+  "name": "PyPath — Python for AI Study Studio",
+  "description": "Focused study workspace for the 5-hour Python for AI course with side-by-side transcripts, timestamped notes, interactive DSA drills, real-time AI debugging, case studies, interview prep, and personalized spaced-repetition roadmaps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
